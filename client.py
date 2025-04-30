@@ -69,7 +69,16 @@ def send_data_via_dns(data: str, target_domain: str):
         label_chunks = part_chunks + [str(i), str(total_parts), session_id]
         send_dns_query(label_chunks, target_domain)
 
+def send_normal_query(domain):
+    try:
+        answer = dns.resolver.resolve(domain, 'A')
+        for r in answer:
+            print(f"[+] Обычный DNS-ответ: {domain} -> {r}")
+    except Exception as e:
+        print(f"[!] Ошибка обычного запроса: {e}")
+
 if __name__ == "__main__":
-    message = "Каждый фрагмент собирался сервером в словарь по session_id и индексу. После получения всех фрагментов выполнялась проверка полноты, восстанавливался порядок, и производилось декодирование полного сообщения. Дополнительно реализована коррекция длины строки для восстановления правильной кодировки Base64."
+    message = "yandex"
     target = "myserver.local"
-    send_data_via_dns(message, target)
+    # send_data_via_dns(message, target)
+    send_normal_query("google.ru")
