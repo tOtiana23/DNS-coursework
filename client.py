@@ -80,5 +80,4 @@ def send_normal_query(domain):
 if __name__ == "__main__":
     message = "yandex"
     target = "myserver.local"
-    # send_data_via_dns(message, target)
     send_normal_query("google.ru")
