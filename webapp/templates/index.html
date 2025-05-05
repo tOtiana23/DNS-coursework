@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>DNS Стелс-Интерфейс</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .log-box {
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        code {
+            background: #eee;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        small {
+            color: #888;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>DNS Скрытый канал</h1>
+
+    <div class="log-box">
+        <h3>📦 Расшифрованные сообщения</h3>
+        <ul id="messageList"></ul>
+    </div>
+    <button id="clearMessages">Очистить</button>
+
+    <div class="log-box">
+        <h3>⚠️ Подозрительные DNS-запросы</h3>
+        <ul id="suspiciousList"></ul>
+    </div>
+    <button id="clearSuspicious">Очистить</button>
+
+    <script>
+        const socket = io("http://localhost:5000");
+
+        socket.on("init", data => {
+            data.messages.forEach(msg => addMessage(msg));
+            data.suspicious.forEach(log => addSuspicious(log));
+        });
+
+        socket.on("new_message", msg => {
+            addMessage(msg);
+        });
+
+        socket.on("suspicious_log", data => addSuspicious(data));
+
+        function addMessage(msg) {
+            const li = document.createElement("li");
+            li.textContent = msg;
+            document.getElementById("messageList").prepend(li);
+        }
+
+        function addSuspicious(data) {
+            const li = document.createElement("li");
+
+            if (typeof data === "string") {
+                // Старый формат
+                li.textContent = data;
+            } else {
+                const reasons = data.reasons.map(r => `• ${r}`).join("<br>");
+                li.innerHTML = `<strong>💥 ${data.ip}</strong> — <code>${data.domain}</code><br><small>${data.timestamp}</small><br>${reasons}`;
+            }
+
+            document.getElementById("suspiciousList").prepend(li);
+        }
+
+        document.getElementById("clearMessages").addEventListener("click", () => {
+            document.getElementById("messageList").innerHTML = "";
+        });
+
+        document.getElementById("clearSuspicious").addEventListener("click", () => {
+            document.getElementById("suspiciousList").innerHTML = "";
+        });
+    </script>
+</body>
+
+</html>

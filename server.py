@@ -3,6 +3,16 @@ from dnslib.server import DNSServer, BaseResolver
 from dnslib import RR, QTYPE, A, DNSRecord
 import datetime
 import base64
+import socketio
+
+# Подключение к веб-интерфейсу
+sio = socketio.Client()
+
+try:
+    sio.connect("http://localhost:5000")
+    print("[✓] Подключено к веб-интерфейсу")
+except Exception as e:
+    print(f"[!] Не удалось подключиться к веб-интерфейсу: {e}")
 
 TARGET_DOMAIN = "myserver.local."
 session_data = {}
@@ -24,6 +34,16 @@ def log_suspicious_query(ip: str, domain: str, reasons: list[str]):
     print(f"[⚠️  {timestamp}] Обнаружен подозрительный запрос от {ip}: {domain}")
     for r in reasons:
         print(f"   └─ Причина: {r}")
+    
+    try:
+        sio.emit("suspicious_log", {
+            "ip": ip,
+            "timestamp": timestamp,
+            "domain": domain,
+            "reasons": reasons
+        })
+    except Exception as e:
+        print(f"[!] Ошибка отправки подозрительного запроса в веб: {e}")
 
 class StealthDNSResolver(BaseResolver):
     def __init__(self, mode='full'):
@@ -64,6 +84,10 @@ class StealthDNSResolver(BaseResolver):
                         full_encoded += "=" * (4 - padding)
                     decoded = base64.urlsafe_b64decode(full_encoded.encode()).decode()
                     print(f"\n✅ [Сессия {session_id}] Расшифровано сообщение:\n{decoded}\n")
+                    try:
+                        sio.emit("new_message", f"[{session_id}] {decoded}")
+                    except Exception as e:
+                        print(f"[!] Ошибка отправки сообщения в веб: {e}")
                     del session_data[session_id]
             except Exception as e:
                 print(f"[!] Ошибка разбора: {e}")
